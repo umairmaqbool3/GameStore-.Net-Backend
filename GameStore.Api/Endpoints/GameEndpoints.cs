@@ -1,5 +1,8 @@
 using System;
+using GameStore.Api.Data;
 using GameStore.Api.Dtos;
+using GameStore.Api.Entities;
+using GameStore.Api.Mapping;
 
 namespace GameStore.Api.Endpoints;
 
@@ -7,7 +10,7 @@ public static class GameEndpoints
 {
     const string GetGameEndpointName = "GetGame";
 
-    private static readonly List<GameDto> games =
+    private static readonly List<GameSummaryDto> games =
     [
         new(
             1,
@@ -38,40 +41,33 @@ public static class GameEndpoints
 
         group.MapGet("/", () => games);
 
-        group.MapGet("/{id}", (int id) =>
+        group.MapGet("/{id}", (int id, GameStoreContext dbContext) =>
         {
-            GameDto? game = games.Find(game => game.Id == id);
-            return game is null ? Results.NotFound() : Results.Ok(game);
+            Game? game = dbContext.Games.Find(id);
+            return game is null ? Results.NotFound() : Results.Ok(game.ToGameDetailsDto());
         })
             .WithName(GetGameEndpointName);
 
-        group.MapPost("/", (CreateGameDto gameDto) =>
+        group.MapPost("/", (CreateGameDto gameDto, GameStoreContext dbContext) =>
         {
-            var newGame = new GameDto(
-                games.Count + 1,
-                gameDto.Name,
-                gameDto.Genre,
-                gameDto.Price,
-                gameDto.ReleaseDate
-            );
-            games.Add(newGame);
-            return Results.CreatedAtRoute(GetGameEndpointName, new { id = newGame.Id }, newGame);
+            Game game = gameDto.ToEntity();
+
+            dbContext.Games.Add(game);
+            dbContext.SaveChanges();
+
+            return Results.CreatedAtRoute(GetGameEndpointName, new { id = game.Id }, game.ToGameDetailsDto());
         });
 
-        group.MapPut("/{id}", (int id, UpdateGameDto gameDto) =>
+        group.MapPut("/{id}", (int id, UpdateGameDto gameDto, GameStoreContext dbContext) =>
         {
-            var index = games.FindIndex(game => game.Id == id);
-            if (index == -1)
+            var existingGame = dbContext.Games.Find(id);
+            if (existingGame is null)
             {
                 return Results.NotFound();
             }
-            games[index] = new GameDto(
-                id,
-                gameDto.Name,
-                gameDto.Genre,
-                gameDto.Price,
-                gameDto.ReleaseDate
-            );
+            
+            dbContext.Entry(existingGame).CurrentValues.SetValues(gameDto.ToEntity(id));
+            dbContext.SaveChanges();
 
             return Results.NoContent();
         });

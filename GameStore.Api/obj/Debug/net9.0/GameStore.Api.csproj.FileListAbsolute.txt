@@ -126,3 +126,4 @@
 /Users/umairmaqbool/Downloads/DotNet-Projects/GameStore.Api/bin/Debug/net9.0/runtimes/win-arm64/native/e_sqlite3.dll
 /Users/umairmaqbool/Downloads/DotNet-Projects/GameStore.Api/bin/Debug/net9.0/runtimes/win-x64/native/e_sqlite3.dll
 /Users/umairmaqbool/Downloads/DotNet-Projects/GameStore.Api/bin/Debug/net9.0/runtimes/win-x86/native/e_sqlite3.dll
+/Users/umairmaqbool/Downloads/DotNet-Projects/GameStore.Api/obj/Debug/net9.0/GameStore.Api.sourcelink.json
