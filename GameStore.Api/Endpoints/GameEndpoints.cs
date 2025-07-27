@@ -3,43 +3,22 @@ using GameStore.Api.Data;
 using GameStore.Api.Dtos;
 using GameStore.Api.Entities;
 using GameStore.Api.Mapping;
+using Microsoft.EntityFrameworkCore;
 
 namespace GameStore.Api.Endpoints;
 
 public static class GameEndpoints
 {
     const string GetGameEndpointName = "GetGame";
-
-    private static readonly List<GameSummaryDto> games =
-    [
-        new(
-            1,
-            "Street Fighter II",
-            "Fighting",
-            19.99M,
-            new DateOnly(1992, 7, 15)
-        ),
-        new(
-            2,
-            "Super Mario World",
-            "Platformer",
-            29.99M,
-            new DateOnly(1990, 11, 21)
-        ),
-        new(
-            3,
-            "Final Fantasy VII",
-            "Roleplaying",
-            59.99M,
-            new DateOnly(2010, 9, 30)
-        )
-    ];
-
     public static RouteGroupBuilder MapGamesEndPoints(this WebApplication app)
     {
         var group = app.MapGroup("games").WithParameterValidation();
 
-        group.MapGet("/", () => games);
+        group.MapGet("/", (GameStoreContext dbContext) => dbContext.Games
+            .Include(game => game.Genre)
+            .Select(game => game.ToGameSummaryDto())
+            .AsNoTracking()
+            );
 
         group.MapGet("/{id}", (int id, GameStoreContext dbContext) =>
         {
@@ -72,15 +51,9 @@ public static class GameEndpoints
             return Results.NoContent();
         });
 
-        group.MapDelete("/{id}", (int id) =>
+        group.MapDelete("/{id}", (int id, GameStoreContext dbContext) =>
         {
-            var index = games.FindIndex(game => game.Id == id);
-            if (index == -1)
-            {
-                return Results.NotFound();
-            }
-
-            games.RemoveAt(index);
+            dbContext.Games.Where(game => game.Id == id).ExecuteDelete();
             return Results.NoContent();
         });
 
